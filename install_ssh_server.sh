@@ -16,12 +16,19 @@ chmod 700 /kaggle/working/.ssh
 chmod 600 /kaggle/working/.ssh/authorized_keys
 
 # Download ngrok
-FILE=/kaggle/working/SSH/ngrok
-if ! test -f "$FILE"; 
-then
-    wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
-    sudo tar xvzf ngrok-v3-stable-linux-amd64.tgz -C /usr/local/bin
-    rm ngrok-v3-stable-linux-amd64.tgz
+# FILE=/kaggle/working/SSH/ngrok
+# if ! test -f "$FILE"; 
+# then
+#     wget https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz
+#     sudo tar xvzf ngrok-v3-stable-linux-amd64.tgz -C /usr/local/bin
+#     rm ngrok-v3-stable-linux-amd64.tgz
+# fi
+
+# ─────────── Cloudflare Quick Tunnel (one static binary) ─────────── #
+if ! command -v cloudflared >/dev/null 2>&1; then
+    wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
+         -O /usr/local/bin/cloudflared
+    chmod +x /usr/local/bin/cloudflared
 fi
 
 # Install SSH-Server
