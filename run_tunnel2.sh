@@ -42,6 +42,7 @@ setsid nohup cloudflared \
       --loglevel warn \
       --logfile /dev/null \
       --no-autoupdate \
+      --no-quic
       >/dev/null 2>&1 &
 
       >/dev/null 2>&1 &
