@@ -7,20 +7,58 @@ if ! pgrep sshd > /dev/null; then
     sleep 2
 fi
 
+# Verify SSH is actually listening on port 22
+if ! netstat -tlnp | grep :22 > /dev/null; then
+    echo "ERROR: SSH is not listening on port 22"
+    service ssh status
+    exit 1
+fi
+
 # Set up logging
 LOG=/kaggle/working/cloudflared.log
 ERROR_LOG=/kaggle/working/cloudflared_error.log
 
 # Kill any existing cloudflared processes
 pkill -f cloudflared
+sleep 2
 
-# Start cloudflared tunnel
+# Clear previous logs
+> "$LOG"
+> "$ERROR_LOG"
+
+# Test cloudflared first
+echo "Testing cloudflared installation..."
+if ! cloudflared --version; then
+    echo "ERROR: cloudflared not properly installed"
+    exit 1
+fi
+
+# Start cloudflared tunnel with more conservative approach
 echo "Starting Cloudflared tunnel..."
-nohup cloudflared tunnel --url tcp://localhost:22 --logfile "$LOG" > "$ERROR_LOG" 2>&1 &
+cloudflared tunnel --url tcp://localhost:22 --logfile "$LOG" > "$ERROR_LOG" 2>&1 &
+CLOUDFLARED_PID=$!
 
-# Wait for tunnel to establish
+# Wait incrementally and check if process is still running
 echo "Waiting for tunnel to establish..."
-sleep 15
+for i in {1..30}; do
+    if ! kill -0 $CLOUDFLARED_PID 2>/dev/null; then
+        echo "ERROR: cloudflared process died after $i seconds"
+        echo "Error log content:"
+        cat "$ERROR_LOG"
+        echo "Regular log content:"
+        cat "$LOG"
+        exit 1
+    fi
+    
+    # Check if we have a tunnel URL yet
+    if grep -q "https://.*\.trycloudflare\.com" "$LOG" 2>/dev/null; then
+        echo "Tunnel established after $i seconds"
+        break
+    fi
+    
+    echo "Waiting... ($i/30)"
+    sleep 1
+done
 
 # Check if cloudflared is running
 if ! pgrep -f cloudflared > /dev/null; then
