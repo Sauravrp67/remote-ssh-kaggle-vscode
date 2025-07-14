@@ -34,6 +34,7 @@ sleep 3
 
 # Find the actual cloudflared PID
 CLOUDFLARED_PID=$(pgrep -f "cloudflared tunnel")
+echo "Cloudflared PID: $CLOUDFLARED_PID"
 
 if [ -z "$CLOUDFLARED_PID" ]; then
     echo "ERROR: Failed to start cloudflared"
