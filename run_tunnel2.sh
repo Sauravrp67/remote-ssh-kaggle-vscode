@@ -33,35 +33,42 @@ if ! cloudflared --version; then
     exit 1
 fi
 
-# Start cloudflared tunnel with more conservative approach
+# Start cloudflared tunnel with proper detachment from TTY
 echo "Starting Cloudflared tunnel..."
-# cloudflared tunnel --url tcp://localhost:22 --logfile "$LOG" > "$ERROR_LOG" 2>&1 &
-setsid nohup cloudflared \
-      tunnel --url tcp://localhost:22 \
-      --protocol http2 \
-      --loglevel warn \
-      --logfile /dev/null \
-      --no-autoupdate \
-      --no-quic
-      >/dev/null 2>&1 &
+# Use setsid to create new session and detach from TTY
+setsid nohup cloudflared tunnel \
+    --url tcp://localhost:22 \
+    --protocol http2 \
+    --loglevel info \
+    --logfile "$LOG" \
+    --no-autoupdate \
+    </dev/null >/dev/null 2>&1 &
 
-      >/dev/null 2>&1 &
-CLOUDFLARED_PID=$!
+# Get the PID of the cloudflared process
+sleep 2
+CLOUDFLARED_PID=$(pgrep -f "cloudflared tunnel")
 
 # Wait incrementally and check if process is still running
 echo "Waiting for tunnel to establish..."
 for i in {1..30}; do
-    if ! kill -0 $CLOUDFLARED_PID 2>/dev/null; then
-        echo "ERROR: cloudflared process died after $i seconds"
-        echo "Error log content:"
-        cat "$ERROR_LOG"
-        echo "Regular log content:"
-        cat "$LOG"
-        exit 1
+    # Check if cloudflared is still running
+    if [ -z "$CLOUDFLARED_PID" ] || ! kill -0 "$CLOUDFLARED_PID" 2>/dev/null; then
+        # Try to find the process again
+        CLOUDFLARED_PID=$(pgrep -f "cloudflared tunnel")
+        if [ -z "$CLOUDFLARED_PID" ]; then
+            echo "ERROR: cloudflared process died after $i seconds"
+            echo "Checking for any cloudflared processes:"
+            ps aux | grep cloudflared | grep -v grep
+            if [ -f "$LOG" ]; then
+                echo "Log content:"
+                cat "$LOG"
+            fi
+            exit 1
+        fi
     fi
     
     # Check if we have a tunnel URL yet
-    if grep -q "https://.*\.trycloudflare\.com" "$LOG" 2>/dev/null; then
+    if [ -f "$LOG" ] && grep -q "https://.*\.trycloudflare\.com" "$LOG" 2>/dev/null; then
         echo "Tunnel established after $i seconds"
         break
     fi
