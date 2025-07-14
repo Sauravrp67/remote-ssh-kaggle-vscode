@@ -38,7 +38,7 @@ echo "Starting Cloudflared tunnel..."
 # cloudflared tunnel --url tcp://localhost:22 --logfile "$LOG" > "$ERROR_LOG" 2>&1 &
 setsid nohup cloudflared \
       tunnel --url tcp://localhost:22 \
-      --transport http2 \
+      --protocol http2 \
       --loglevel warn \
       --logfile /dev/null \
       --no-autoupdate \
