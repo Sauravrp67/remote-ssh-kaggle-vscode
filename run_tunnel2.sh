@@ -36,8 +36,14 @@ fi
 # Start cloudflared tunnel with more conservative approach
 echo "Starting Cloudflared tunnel..."
 # cloudflared tunnel --url tcp://localhost:22 --logfile "$LOG" > "$ERROR_LOG" 2>&1 &
-setsid nohup cloudflared --no-autoupdate \
-      tunnel --url tcp://localhost:22 --logfile "$LOG" \
+setsid nohup cloudflared \
+      tunnel --url tcp://localhost:22 \
+      --transport http2 \
+      --loglevel warn \
+      --logfile /dev/null \
+      --no-autoupdate \
+      >/dev/null 2>&1 &
+
       >/dev/null 2>&1 &
 CLOUDFLARED_PID=$!
 
