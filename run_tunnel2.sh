@@ -35,7 +35,10 @@ fi
 
 # Start cloudflared tunnel with more conservative approach
 echo "Starting Cloudflared tunnel..."
-cloudflared tunnel --url tcp://localhost:22 --logfile "$LOG" > "$ERROR_LOG" 2>&1 &
+# cloudflared tunnel --url tcp://localhost:22 --logfile "$LOG" > "$ERROR_LOG" 2>&1 &
+setsid nohup cloudflared --no-autoupdate \
+      tunnel --url tcp://localhost:22 --logfile "$LOG" \
+      >/dev/null 2>&1 &
 CLOUDFLARED_PID=$!
 
 # Wait incrementally and check if process is still running
